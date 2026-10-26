@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #ffffff;
+  --color-surface: #f3f5f8;
+  --color-fg: #141820;
+  --color-muted: #5c6774;
+  --color-line: #d5dce6;
+  --color-red: #d10045;
+  --color-blue: #0077b6;
+  --color-green: #0b8f55;
+  --color-mix: #7a2ee6;
+  --font-display: "Syne", "Trebuchet MS", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    overscroll-behavior: none;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--color-fg);
+    outline-offset: 2px;
+  }
+}
+
+.game-root {
+  box-sizing: border-box;
+  height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #05060a;
+    --color-surface: #12151c;
+    --color-fg: #eef4ff;
+    --color-muted: #8e97a8;
+    --color-line: #243044;
+    --color-red: #ff2d55;
+    --color-blue: #3ec6ff;
+    --color-green: #3dff9a;
+    --color-mix: #d06bff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-root,
+  .game-root * {
+    transition: none !important;
+  }
+}
