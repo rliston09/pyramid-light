@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { type MoveBox, type Pyramid, type Side, type Space, beamDir } from "@/game/geometry";
+import { type MoveBox, type Pyramid, type Side, type Space, ROCKS, beamDir, isRock } from "@/game/geometry";
 
 const RED = "#ff2d55";
 const BLUE = "#3ec6ff";
@@ -85,6 +85,56 @@ function drawMoveBox(
   for (const cell of cells) {
     cell.faces.forEach((face, i) => {
       ctx.globalAlpha = 0.28 + i * 0.14;
+      ctx.beginPath();
+      face.forEach((pt, n) => (n === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    });
+  }
+  ctx.restore();
+}
+
+function drawRocks(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  flat: boolean,
+  view: View,
+  dark: boolean,
+) {
+  if (flat) return;
+  const fill = dark ? "#c5d0dc" : "#5c6b7c";
+  const edge = dark ? "#f4f7fb" : "#1c2836";
+  const cells: Array<{ depth: number; faces: Pt[][] }> = [];
+  for (const rock of ROCKS) {
+    const p = (dx: number, dy: number, dz: number) =>
+      project(rock.x + dx, rock.y + dy, rock.z + dz, w, h, flat, view);
+    const o = p(0.08, 0.08, 0.08);
+    const ax = p(0.92, 0.08, 0.08);
+    const ay = p(0.08, 0.92, 0.08);
+    const az = p(0.08, 0.08, 0.92);
+    const axy = p(0.92, 0.92, 0.08);
+    const axz = p(0.92, 0.08, 0.92);
+    const ayz = p(0.08, 0.92, 0.92);
+    cells.push({
+      depth: o.depth,
+      faces: [
+        [o, ax, axy, ay],
+        [o, ay, ayz, az],
+        [o, ax, axz, az],
+      ],
+    });
+  }
+  cells.sort((a, b) => a.depth - b.depth);
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 1.4;
+  for (const cell of cells) {
+    cell.faces.forEach((face, i) => {
+      ctx.globalAlpha = dark ? 0.72 + i * 0.08 : 0.82 + i * 0.05;
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = edge;
       ctx.beginPath();
       face.forEach((pt, n) => (n === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)));
       ctx.closePath();
@@ -405,6 +455,8 @@ export function CubeStage({
     }
     ctx.globalAlpha = 1;
 
+    drawRocks(ctx, w, h, flat, view, dark);
+
     if (turn === "red" && redBox) drawMoveBox(ctx, redBox, RED, w, h, flat, view);
     if (turn === "blue" && blueBox) drawMoveBox(ctx, blueBox, BLUE, w, h, flat, view);
 
@@ -422,6 +474,8 @@ export function CubeStage({
       const pending = ghost ?? self;
       const moved = pending.x !== self.x || pending.y !== self.y || pending.z !== self.z;
       const aiming = pending.heading !== self.heading || pending.pitch !== self.pitch;
+      const ghostRock = moved && isRock(pending.x, pending.y, pending.z);
+      const ghostColor = ghostRock ? (dark ? "#c5d0dc" : "#5c6b7c") : mine;
       drawPyramid(ctx, self, mine, w, h, flat, false, view, false, undefined, true);
       drawPyramid(
         ctx,
@@ -435,7 +489,7 @@ export function CubeStage({
         true,
         !aiming && !moved && mixed ? PURPLE : undefined,
       );
-      if (moved) drawPyramid(ctx, pending, mine, w, h, flat, true, view, false, undefined, true);
+      if (moved) drawPyramid(ctx, pending, ghostColor, w, h, flat, true, view, false, undefined, true);
       if (otherBeam) drawPyramid(ctx, other, theirs, w, h, flat, false, view, true, mixed ? PURPLE : undefined);
     }
   }, [red, blue, turn, otherBeam, mixed, finale, space, size, ghost, redBox, blueBox, view, dark]);
@@ -455,8 +509,8 @@ export function CubeStage({
         {finale
           ? "Both pyramids · drag to turn"
           : otherBeam
-            ? `${who}'s pyramid · other beam · drag to turn`
-            : `${who}'s pyramid · drag to turn`}
+            ? `${who}'s pyramid · other beam · center rocks · drag to turn`
+            : `${who}'s pyramid · center rocks · drag to turn`}
       </p>
     </div>
   );

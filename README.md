@@ -14,6 +14,7 @@ Red moves first. You pass the phone after every committed move.
 2. Aim. Yaw is any angle, 0° through 359°. 0° is north and 90° is east. Pitch is five steps from straight down (−2) to straight up (+2), 45° each.
 3. Commit. The turn passes. Your last move stays on the cube as a lit box of cells, and only you see it. When the phone passes, that box is gone.
 4. A cell the other pyramid already occupies is refused. You stay on the turn and can pick again. The message is “That cell is taken.”
+5. Four cells near the middle are rocks, the same every game: (10, 10, 10), (11, 10, 10), (10, 11, 10), and (10, 10, 11). Both players always see them. Standing on one is refused and does not spend the turn. The message is “That cell is blocked.” Beams pass through. Standing next to a rock is allowed.
 
 The beam on your pyramid follows the aim sliders before you commit. A dashed pyramid shows a new cell before you commit.
 
@@ -25,6 +26,7 @@ Drag the cube to turn it. Pinch to zoom. The cube edges get thicker as you zoom 
 | --- | --- | --- |
 | Your pyramid and your beam | The other beam, once the proximity meter is halfway | The other pyramid |
 | Your own last move, as lit cubes, on your turn | Both beams turning purple when they mix | A map, coordinates of the other player, or their last move |
+| The four center rocks | | |
 | Proximity, the parallel meter, and the saved beam view | | |
 
 Halfway is the middle of the proximity bar, half the corner-to-corner span of the cube. Closer than that, the other beam stays visible. The other pyramid appears only when you lock.
@@ -49,6 +51,7 @@ The parallel meter is separate from the mix. It measures how close the two beams
 Do not add these unless someone asks.
 
 - A score that the parallel multiplier actually changes.
+- Choosing a difficulty, or a different set of rocks.
 - Own-pace play, where each person moves when they want.
 - Realtime play.
 

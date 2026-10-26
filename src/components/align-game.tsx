@@ -19,6 +19,7 @@ import {
   OPENING_CUBE,
   PRESET_SAME,
   READOUT_COPY,
+  isRock,
   spawnPair,
 } from "@/game/geometry";
 import { playCommit, playLock, playSelect, unlockAudio } from "@/game/sfx";
@@ -48,6 +49,13 @@ export function AlignGame() {
   const joined = started && match.phase === "joined";
   const showRules = rulesOpen;
   const actor = match.turn === "red" ? match.red : match.blue;
+  const otherPyramid = match.turn === "red" ? match.blue : match.red;
+  const refusal =
+    started && isRock(place.x, place.y, place.z)
+      ? "rock"
+      : started && place.x === otherPyramid.x && place.y === otherPyramid.y && place.z === otherPyramid.z
+        ? "taken"
+        : null;
   const parallel = useMemo(() => {
     const mine = { ...actor, heading, pitch };
     const other = match.turn === "red" ? match.blue : match.red;
@@ -342,7 +350,7 @@ export function AlignGame() {
       </div>
 
       <p className="shrink-0 px-4 py-1 text-center text-sm leading-snug text-fg" aria-live="polite">
-        {match.lastBlocked && started ? "That cell is taken. " : ""}
+        {refusal === "taken" ? "That cell is taken. " : refusal === "rock" ? "That cell is blocked. " : ""}
         {match.phase === "mix"
           ? "Beams combined. Two moves each to stand on neighboring cells."
           : match.phase === "near"
@@ -426,7 +434,7 @@ function Rules({
         </li>
         <li>
           <span className="font-mono text-fg">02 </span>
-          One move can shift you by 15 cells on each axis, and aim anywhere in 360°. A taken cell is refused and you try again. You only see your own last move.
+          One move can shift you by 15 cells on each axis, and aim anywhere in 360°. A taken cell is refused and you try again. Four rocks sit on the center. You cannot stand on them. You only see your own last move.
         </li>
         <li>
           <span className="font-mono text-fg">03 </span>

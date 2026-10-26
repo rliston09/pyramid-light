@@ -7,6 +7,7 @@ import {
   createMatch,
   commitMove,
   commitPlace,
+  isRock,
   OPENING,
   OPENING_CUBE,
   PRESET_LOCK,
@@ -174,9 +175,44 @@ test("two pyramids cannot share a cell", () => {
   assert.equal(next.red.x, 4);
   assert.equal(next.red.z, 4);
   assert.equal(next.lastBlocked, true);
+  assert.equal(next.blockReason, "taken");
   assert.equal(next.turn, "red");
   assert.equal(next.moves, 0);
   assert.notEqual(next.phase, "joined");
+});
+
+test("four center rocks refuse a landing and do not spend the turn", () => {
+  assert.equal(isRock(10, 10, 10), true);
+  assert.equal(isRock(11, 10, 10), true);
+  assert.equal(isRock(10, 11, 10), true);
+  assert.equal(isRock(10, 10, 11), true);
+  assert.equal(isRock(9, 10, 10), false);
+
+  const match = createMatch(
+    {
+      red: { x: 10, y: 10, z: 8, heading: 0 },
+      blue: { x: 2, y: 2, z: 2, heading: 90 },
+    },
+    "cube",
+  );
+  const blocked = commitPlace(match, { x: 10, y: 10, z: 10 }, 0, 0);
+  assert.equal(blocked.red.z, 8);
+  assert.equal(blocked.lastBlocked, true);
+  assert.equal(blocked.blockReason, "rock");
+  assert.equal(blocked.turn, "red");
+  assert.equal(blocked.moves, 0);
+
+  const beside = commitPlace(match, { x: 9, y: 10, z: 10 }, 0, 0);
+  assert.equal(beside.red.x, 9);
+  assert.equal(beside.red.z, 10);
+  assert.equal(beside.blockReason, null);
+  assert.equal(beside.turn, "blue");
+
+  for (let i = 0; i < 40; i++) {
+    const pair = spawnPair("cube");
+    assert.equal(isRock(pair.red.x, pair.red.y, pair.red.z), false);
+    assert.equal(isRock(pair.blue.x, pair.blue.y, pair.blue.z), false);
+  }
 });
 
 test("the cube keeps up-steps and same-direction locks in 3D", () => {

@@ -6,6 +6,22 @@ export const ALIGN_DIST = 3;
 export const MIX_DIST = 5;
 export const MOVE_REACH = 15;
 
+/** Same every game. Feet cannot stand here. Beams pass through. */
+export const ROCKS: ReadonlyArray<{ x: number; y: number; z: number }> = [
+  { x: 10, y: 10, z: 10 },
+  { x: 11, y: 10, z: 10 },
+  { x: 10, y: 11, z: 10 },
+  { x: 10, y: 10, z: 11 },
+];
+
+const ROCK_KEYS = new Set(ROCKS.map((r) => `${r.x},${r.y},${r.z}`));
+
+export function isRock(x: number, y: number, z: number) {
+  return ROCK_KEYS.has(`${x},${y},${z}`);
+}
+
+export type BlockReason = "taken" | "rock" | null;
+
 export type Space = "flat" | "cube";
 export type Side = "red" | "blue";
 export type Phase = "seek" | "near" | "mix" | "joined";
@@ -137,6 +153,8 @@ export type Match = {
   redLeft: number;
   blueLeft: number;
   broke: boolean;
+  /** Why the last place was refused. Null when the turn was spent. */
+  blockReason: BlockReason;
   redBox: MoveBox | null;
   blueBox: MoveBox | null;
 };
@@ -391,7 +409,8 @@ export function applyMove(p: LoosePyramid, step: Step, aim: Aim, pitchAim: Aim =
   const verticalBlocked = space === "flat" && delta.z !== 0;
   const off = x < 0 || y < 0 || z < 0 || x >= GRID || y >= GRID || z >= GRID;
   const moved = delta.x !== 0 || delta.y !== 0 || delta.z !== 0;
-  const blocked = verticalBlocked || (off && moved);
+  const rock = space === "cube" && isRock(x, y, z);
+  const blocked = verticalBlocked || (off && moved) || (rock && moved);
   const pitch = space === "cube" ? Math.max(-2, Math.min(2, src.pitch + pitchAim)) : 0;
   return {
     blocked,
@@ -487,6 +506,7 @@ function finishMove(match: Match, pyramid: Pyramid, blocked: boolean): Match {
     redLeft,
     blueLeft,
     broke,
+    blockReason: null,
     redBox: match.turn === "red" ? box : (match.redBox ?? null),
     blueBox: match.turn === "blue" ? box : (match.blueBox ?? null),
   };
@@ -503,8 +523,11 @@ export function commitPlace(match: Match, place: Place, heading: number, pitch =
   const current = match.turn === "red" ? match.red : match.blue;
   const other = match.turn === "red" ? match.blue : match.red;
   const { pyramid } = placeMove(current, place, heading, pitch);
+  if (isRock(pyramid.x, pyramid.y, pyramid.z)) {
+    return { ...match, space: "cube" as const, lastBlocked: true, blockReason: "rock" as const };
+  }
   const taken = pyramid.x === other.x && pyramid.y === other.y && pyramid.z === other.z;
-  if (taken) return { ...match, space: "cube" as const, lastBlocked: true };
+  if (taken) return { ...match, space: "cube" as const, lastBlocked: true, blockReason: "taken" as const };
   return finishMove({ ...match, space: "cube" }, pyramid, false);
 }
 
@@ -523,6 +546,7 @@ export function createMatch(
     redLeft: 2,
     blueLeft: 2,
     broke: false,
+    blockReason: null,
     redBox: null,
     blueBox: null,
   };
@@ -549,7 +573,9 @@ export function spawnPair(space: Space = "flat"): { red: Pyramid; blue: Pyramid 
       heading: randInt(360),
       pitch: space === "cube" ? randInt(5) - 2 : 0,
     });
-    if (len(sub(pos(blue), pos(red))) >= minDist) return { red, blue };
+    const rocky = isRock(red.x, red.y, red.z) || isRock(blue.x, blue.y, blue.z);
+    const stacked = red.x === blue.x && red.y === blue.y && red.z === blue.z;
+    if (!rocky && !stacked && len(sub(pos(blue), pos(red))) >= minDist) return { red, blue };
   }
   if (space === "cube") {
     return {
